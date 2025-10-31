@@ -11,16 +11,15 @@ export default function Signup({ onNavigate }) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({})
   const [toast, setToast] = useState(null)
+  const [loading, setLoading] = useState(false);
 
   const { register } = useAuth()
 
   const submit = async (e) => {
     e.preventDefault()
-    setError('')
+      setFieldErrors({})
     // client-side validation
     const fieldErrors = {}
     if (!isNameValid(firstName)) fieldErrors.firstName = 'Enter a valid first name'
@@ -44,7 +43,6 @@ export default function Signup({ onNavigate }) {
     } catch (err) {
       console.error('signup error', err?.response || err)
   const msg = err?.response?.data?.message || 'Failed to create account'
-  setError(msg)
   setToast({ message: msg, type: 'error' })
     } finally {
       setLoading(false)
@@ -54,8 +52,7 @@ export default function Signup({ onNavigate }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
-        <h1 className="text-h1 font-semibold mb-4">Create account</h1>
-  {error && <div className="mb-3 text-sm text-red-500">{error}</div>}
+    <h1 className="text-h1 font-semibold mb-4">Create account</h1>
         <form onSubmit={submit}>
           <FormField id="firstName" label="First name" value={firstName} onChange={(e)=>setFirstName(e.target.value)} error={fieldErrors.firstName} />
           <FormField id="lastName" label="Last name" value={lastName} onChange={(e)=>setLastName(e.target.value)} error={fieldErrors.lastName} />

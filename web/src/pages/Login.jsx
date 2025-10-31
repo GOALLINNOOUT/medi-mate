@@ -10,15 +10,13 @@ export default function Login({ onNavigate }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({})
   const [toast, setToast] = useState(null)
 
   const { login } = useAuth()
 
   const submit = async (e) => {
-    e.preventDefault()
-    setError('')
+  e.preventDefault()
     // client-side validation
     const fe = {}
     if (!isEmail(email)) fe.email = 'Enter a valid email'
@@ -39,8 +37,7 @@ export default function Login({ onNavigate }) {
       setPassword('')
     } catch (err) {
       console.error('login error', err?.response || err)
-  setError(err?.response?.data?.message || 'Failed to sign in')
-  setToast({ message: err?.response?.data?.message || 'Failed to sign in', type: 'error' })
+      setToast({ message: err?.response?.data?.message || 'Failed to sign in', type: 'error' })
     } finally {
       setLoading(false)
     }
