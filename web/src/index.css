@@ -1,16 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Typography */
+  font-family: 'Segoe UI', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
+  /* Color system tokens (light mode defaults) */
+  --color-primary: #2D9CDB;
+  --color-primary-light: #56CCF2;
+  --color-secondary: #27AE60;
+  --color-bg: #F9FAFB;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-border: #E5E7EB;
+  --color-error: #E63946;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+  --color-success: #10B981;
+
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark theme overrides when [data-theme="dark"] is present on <html> or <body> */
+[data-theme="dark"] {
+  --color-primary: #56CCF2;
+  --color-primary-light: #56CCF2;
+  --color-secondary: #6EE7B7;
+  --color-bg: #0F172A;
+  --color-surface: #1E293B;
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #9CA3AF;
+  --color-border: #374151;
+  --color-error: #F87171;
+  --color-warning: #FBBF24;
+  --color-info: #3B82F6;
+  --color-success: #10B981;
 }
 
 a {
@@ -28,6 +64,12 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* Utility: surface backgrounds and text colors using tokens */
+.app-shell {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
 }
 
 h1 {
