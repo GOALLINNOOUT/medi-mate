@@ -4,7 +4,36 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
+    <title>MediMate</title>
+    <!-- Inline Tailwind config: map Tailwind color names to the CSS variables defined in src/index.css -->
+    <script>
+      window.tailwind = window.tailwind || {}
+      window.tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: 'var(--color-primary)',
+              'primary-light': 'var(--color-primary-light)',
+              secondary: 'var(--color-secondary)',
+              bg: 'var(--color-bg)',
+              surface: 'var(--color-surface)',
+              'text-primary': 'var(--color-text-primary)',
+              'text-secondary': 'var(--color-text-secondary)',
+              border: 'var(--color-border)',
+              error: 'var(--color-error)',
+              warning: 'var(--color-warning)',
+              info: 'var(--color-info)',
+              success: 'var(--color-success)'
+            },
+            fontFamily: {
+              sans: ['"Segoe UI"', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Use Tailwind Play CDN so styles work without installing the Tailwind CLI during development -->
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
     <div id="root"></div>

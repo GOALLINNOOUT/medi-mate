@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import { AuthProvider } from './contexts/AuthContext'
+import Header from './components/Header'
+import Footer from './components/Footer'
 
 function App() {
   const [page, setPage] = useState('login')
@@ -11,21 +14,21 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light')
   }, [theme])
 
-  return (
-    <div className="app-shell min-h-screen">
-      <header className="p-4 flex justify-end">
-        <button
-          aria-label="Toggle theme"
-          onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-          className="px-3 py-1 rounded-md border border-border text-[var(--color-text-secondary)]"
-        >
-          {theme === 'dark' ? 'Light' : 'Dark'}
-        </button>
-      </header>
+  const pages = {
+    login: <Login onNavigate={setPage} />,
+    signup: <Signup onNavigate={setPage} />,
+  }
 
-      {page === 'login' && <Login onNavigate={setPage} />}
-      {page === 'signup' && <Signup onNavigate={setPage} />}
-    </div>
+  return (
+    <AuthProvider>
+      <div className="app-shell min-h-screen flex flex-col">
+        <Header theme={theme} onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
+
+        <main className="flex-1">{pages[page]}</main>
+
+        <Footer />
+      </div>
+    </AuthProvider>
   )
 }
 
