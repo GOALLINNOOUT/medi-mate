@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const User = require('../models/user');
 const Medication = require('../models/medication');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
-const { buildVerificationEmail } = require('../utils/mailTemplates');
+const { buildVerificationEmail, buildPasswordResetEmail } = require('../utils/mailTemplates');
 const { computeEmailHash, normalizeEmail } = require('../utils/encryption');
 
 exports.register = async (req, res) => {
@@ -311,6 +311,104 @@ exports.resendVerification = async (req, res) => {
   }
 };
 
+// Forgot password: generate reset token and email the user a reset link
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const normalizedEmail = normalizeEmail(email);
+    const emailHash = computeEmailHash(normalizedEmail);
+
+    const user = await User.findOne({ emailHash });
+
+    // For privacy, always return a success response even if user not found.
+    if (!user) {
+      return res.json({ message: 'If an account with that email exists, password reset instructions have been sent.' });
+    }
+
+    // Throttle: ensure we don't send more than N reset emails in short period
+    const MAX_TRIES = Number(process.env.PASSWORD_RESET_MAX_TRIES) || 5;
+    const WINDOW_MS = Number(process.env.PASSWORD_RESET_WINDOW_MS) || (60 * 60 * 1000); // 1 hour
+    const COOLDOWN_MS = Number(process.env.PASSWORD_RESET_COOLDOWN_MS) || (60 * 60 * 1000); // 1 hour
+
+    const now = Date.now();
+    if (!user.resetWindowStart || (now - new Date(user.resetWindowStart).getTime()) > WINDOW_MS) {
+      user.resetAttemptCount = 0;
+      user.resetWindowStart = new Date();
+    }
+
+    user.resetAttemptCount = (user.resetAttemptCount || 0) + 1;
+    if (user.resetAttemptCount > MAX_TRIES) {
+      user.lastPasswordResetSentAt = new Date();
+      await user.save();
+      const retryAfterSeconds = Math.ceil(COOLDOWN_MS / 1000);
+      res.set('Retry-After', String(retryAfterSeconds));
+      return res.status(429).json({ message: 'Too many password reset requests. Please try again later.' });
+    }
+
+    // Generate token and store hashed token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const resetExpiry = new Date(Date.now() + (Number(process.env.PASSWORD_RESET_EXPIRY_MS) || (60 * 60 * 1000))); // default 1 hour
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = resetExpiry;
+    user.lastPasswordResetSentAt = new Date();
+    await user.save();
+
+    await sendPasswordResetEmail(user, rawToken);
+
+    return res.json({ message: 'If an account with that email exists, password reset instructions have been sent.' });
+  } catch (err) {
+    console.error('forgotPassword error', err);
+    return res.status(500).json({ message: 'Error processing password reset request' });
+  }
+};
+
+// Reset password using token
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ message: 'Token and new password are required' });
+
+    const hashed = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({ resetPasswordToken: hashed, resetPasswordExpires: { $gt: Date.now() } });
+    if (!user) return res.status(400).json({ message: 'Invalid or expired reset token' });
+
+    // Update password and clear reset fields
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    // Optionally sign the user in after password reset
+    const tokenStr = generateToken(user._id, user.role);
+    const refreshToken = generateRefreshToken(user._id);
+
+    const refreshCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    }
+    const accessCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    }
+
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions)
+    res.cookie('accessToken', tokenStr, accessCookieOptions)
+
+    res.json({ message: 'Password reset successful and signed in', user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role } });
+  } catch (err) {
+    console.error('resetPassword error', err);
+    res.status(500).json({ message: 'Error resetting password' });
+  }
+};
+
 // Helper: send verification email. If SMTP is configured, uses nodemailer; otherwise logs the link to console.
 async function sendVerificationEmail(user, token) {
   try {
@@ -398,6 +496,77 @@ async function sendVerificationEmail(user, token) {
     }
   } catch (err) {
     console.error('Error sending verification email:', err.message);
+    return false;
+  }
+}
+
+// Helper: send password reset email similar to verification flow
+async function sendPasswordResetEmail(user, token) {
+  try {
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetUrl = `${frontend.replace(/\/$/, '')}/reset-password?token=${token}`;
+
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        },
+        connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 5000,
+        greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 5000,
+        socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS) || 5000,
+      });
+
+      const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER;
+      const { subject, text, html } = buildPasswordResetEmail(user, resetUrl, token);
+
+      const mailOptions = { from: fromAddress, to: user.email, subject, text, html };
+
+      try {
+        const info = await transporter.sendMail(mailOptions);
+        if (nodemailer.getTestMessageUrl) {
+          const preview = nodemailer.getTestMessageUrl(info);
+          if (preview) console.log('Email preview URL:', preview);
+        }
+        return true;
+      } catch (sendErr) {
+        console.error('Primary SMTP send failed for password reset:', sendErr && sendErr.message ? sendErr.message : sendErr);
+        const fallbackErrors = ['ETIMEDOUT', 'ECONNREFUSED', 'EAI_AGAIN', 'ENOTFOUND'];
+        if (fallbackErrors.includes(sendErr && sendErr.code)) {
+          try {
+            console.warn('Falling back to Nodemailer Ethereal test account for dev preview');
+            const testAccount = await nodemailer.createTestAccount();
+            const testTransport = nodemailer.createTransport({
+              host: testAccount.smtp.host,
+              port: testAccount.smtp.port,
+              secure: testAccount.smtp.secure,
+              auth: { user: testAccount.user, pass: testAccount.pass }
+            });
+
+            const info2 = await testTransport.sendMail(mailOptions);
+            const preview = nodemailer.getTestMessageUrl(info2);
+            console.log('Ethereal preview URL:', preview);
+            return true;
+          } catch (ethErr) {
+            console.error('Ethereal fallback also failed:', ethErr && ethErr.message ? ethErr.message : ethErr);
+          }
+        }
+        throw sendErr;
+      }
+    } else {
+      console.log('--- NO SMTP CONFIGURED: password reset link ---');
+      console.log(`To: ${user.email}`);
+      console.log('Reset URL:', resetUrl);
+      console.log('Reset token:', token);
+      console.log('--- END reset link ---');
+      return false;
+    }
+  } catch (err) {
+    console.error('Error sending password reset email:', err.message);
     return false;
   }
 }

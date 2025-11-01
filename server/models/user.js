@@ -116,6 +116,25 @@ const userSchema = new mongoose.Schema({
   verificationTokenExpires: {
     type: Date
   },
+  // Password reset fields
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpires: {
+    type: Date
+  },
+  // Track when the last password reset email was sent to enforce cooldowns
+  lastPasswordResetSentAt: {
+    type: Date
+  },
+  // Track per-user reset attempt counts and window start for throttling
+  resetAttemptCount: {
+    type: Number,
+    default: 0
+  },
+  resetWindowStart: {
+    type: Date
+  },
   // Track when the last verification email was sent to enforce resend cooldowns
   lastVerificationSentAt: {
     type: Date
