@@ -37,10 +37,11 @@ export default function Signup() {
     }
     setLoading(true)
     try {
-      const data = await register(firstName, lastName, email, password)
-      console.log('signup success', data)
-      setToast({ message: 'Account created — you can sign in now', type: 'success' })
-      setTimeout(() => navigate('/login'), 800)
+  const data = await register(firstName, lastName, email, password)
+  console.log('signup success', data)
+  // Show success toast and wait a few seconds before redirecting so user can read message
+  setToast({ message: 'Account created — check your email to verify your account', type: 'success' })
+  setTimeout(() => navigate('/check-email', { state: { email } }), 3000)
     } catch (err) {
       console.error('signup error', err?.response || err)
       const msg = err?.response?.data?.message || 'Failed to create account'

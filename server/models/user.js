@@ -44,6 +44,29 @@ const userSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid phone number!`
     }
   },
+  // Email verification fields
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationToken: {
+    type: String
+  },
+  verificationTokenExpires: {
+    type: Date
+  },
+  // Track when the last verification email was sent to enforce resend cooldowns
+  lastVerificationSentAt: {
+    type: Date
+  },
+  // Track per-user resend attempt counts and window start for throttling
+  resendAttemptCount: {
+    type: Number,
+    default: 0
+  },
+  resendWindowStart: {
+    type: Date
+  },
   fcmTokens: [{
     type: String,
     required: false

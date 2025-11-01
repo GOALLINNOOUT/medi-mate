@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Logo transition keyframes: 7s total -> 2s intro, 3s hold, 2s outro */
+@keyframes logoSequence {
+	0% {
+		transform: translateX(-120%) scale(0.5);
+		opacity: 0;
+	}
+	28.571% { /* 2 / 7 * 100 */
+		transform: translateX(0) scale(1);
+		opacity: 1;
+	}
+	71.429% { /* 5 / 7 * 100 -> hold until 5s */
+		transform: translateX(0) scale(1);
+		opacity: 1;
+	}
+	100% {
+		transform: translateX(0) scale(1.5);
+		opacity: 0;
+	}
+}
+
+.fullscreen-logo {
+	position: fixed;
+	inset: 0; /* top:0; right:0; bottom:0; left:0 */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/* Dark background per request */
+	background-color: #0f172a; /* slate-900 / dark */
+	color: #fff;
+	z-index: 9999;
+}
+
+.logo-transition {
+	width: min(48vmin, 360px);
+	height: auto;
+	will-change: transform, opacity;
+	animation: logoSequence 7s cubic-bezier(.22, .9, .32, 1) forwards;
+}

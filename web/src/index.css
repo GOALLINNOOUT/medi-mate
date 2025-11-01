@@ -13,11 +13,13 @@
   --color-primary: #2D9CDB;
   --color-primary-light: #56CCF2;
   --color-secondary: #27AE60;
-  --color-bg: #F9FAFB;
+  /* Slightly deeper background than pure white to increase separation from surfaces */
+  --color-bg: #F3F4F6; /* gray-100 */
   --color-surface: #FFFFFF;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-border: #E5E7EB;
+  --color-text-primary: #0F1724; /* slightly darker for improved contrast */
+  --color-text-secondary: #374151; /* gray-700 - stronger contrast than previous */
+  /* stronger border to separate cards/inputs from background */
+  --color-border: #D1D5DB; /* gray-300 */
   --color-error: #E63946;
   --color-warning: #F59E0B;
   --color-info: #3B82F6;
@@ -99,8 +101,12 @@ button:hover {
   border-color: var(--color-primary-light);
 }
 button:focus,
+button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+  /* clearer, accessible focus ring using primary color with reduced opacity */
+  box-shadow: 0 0 0 4px rgba(45,156,219,0.18);
+  border-color: var(--color-primary-light);
 }
 
 /* Respect user/system preference. Defaults are defined in :root; dark can be provided

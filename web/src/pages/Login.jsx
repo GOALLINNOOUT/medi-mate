@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import { useAuth } from '../contexts/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom'
 import Toast from '../components/Toast';
+import LogoTransition from '../components/LogoTransition'
 import { isEmail, isPasswordValid } from '../utils/validators'
 
 export default function Login() {
@@ -13,6 +14,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({})
   const [toast, setToast] = useState(null)
+  const [showLogo, setShowLogo] = useState(false)
 
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -39,11 +41,20 @@ export default function Login() {
       setToast({ message: 'Signed in successfully', type: 'success' })
       setEmail('')
       setPassword('')
-      // after toast dismiss we'll navigate — use a short timeout to allow toast animation
-      setTimeout(() => navigate(from.pathname || '/dashboard', { replace: true }), 900)
+          // wait a short moment so the success toast is readable, then show logo transition
+          setTimeout(() => setShowLogo(true), 3000)
     } catch (err) {
       console.error('login error', err?.response || err)
-      setToast({ message: err?.response?.data?.message || 'Failed to sign in', type: 'error' })
+      // If server returns 403 for unverified email, send user to check-email screen
+      const status = err?.response?.status
+      const serverMsg = err?.response?.data?.message
+      if (status === 403) {
+        // navigate to check-email with email so user can resend verification
+       setTimeout(() => navigate('/check-email', { state: { email } }), 3000)
+        setToast({ message: serverMsg || 'Email not verified. Check your inbox.', type: 'error' })
+      } else {
+        setToast({ message: serverMsg || 'Failed to sign in', type: 'error' })
+      }
     } finally {
       setLoading(false)
     }
@@ -51,18 +62,24 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-md">
-        <h1 className="text-h1 font-semibold mb-4">Sign in</h1>
-        <form onSubmit={submit}>
-          <FormField id="email" label="Email" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="you@example.com" error={fieldErrors.email} />
-          <FormField id="password" label="Password" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="••••••••" error={fieldErrors.password} />
-          <div className="flex items-center justify-between mt-4">
-            <Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
-            <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>navigate('/signup')}>Create account</button>
-          </div>
-        </form>
-      </Card>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {showLogo ? (
+        <LogoTransition onComplete={() => navigate(from.pathname || '/dashboard', { replace: true })} />
+      ) : (
+        <Card className="w-full max-w-md">
+          <h1 className="text-h1 font-semibold mb-4">Sign in</h1>
+          <form onSubmit={submit}>
+            <FormField id="email" label="Email" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="you@example.com" error={fieldErrors.email} />
+            <FormField id="password" label="Password" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="••••••••" error={fieldErrors.password} />
+            <div className="flex items-center justify-between mt-4">
+              <Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
+              <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>navigate('/signup')}>Create account</button>
+            </div>
+          </form>
+        </Card>
+      )}
+      
+  {toast && !showLogo && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
+
