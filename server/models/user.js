@@ -28,6 +28,7 @@ const { encryptField, decryptField, normalizeEmail, computeEmailHash } = require
 // Build schema: retain original fields but encrypt PII fields (email, firstName, lastName, phoneNumber)
 const userSchema = new mongoose.Schema({
   email: {
+    type: String,
     set: function(v) {
       // normalize, compute emailHash for deterministic lookup, then encrypt normalized value for storage
       const norm = normalizeEmail(v);
@@ -113,6 +114,25 @@ const userSchema = new mongoose.Schema({
     type: String
   },
   verificationTokenExpires: {
+    type: Date
+  },
+  // Password reset fields
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpires: {
+    type: Date
+  },
+  // Track when the last password reset email was sent to enforce cooldowns
+  lastPasswordResetSentAt: {
+    type: Date
+  },
+  // Track per-user reset attempt counts and window start for throttling
+  resetAttemptCount: {
+    type: Number,
+    default: 0
+  },
+  resetWindowStart: {
     type: Date
   },
   // Track when the last verification email was sent to enforce resend cooldowns
