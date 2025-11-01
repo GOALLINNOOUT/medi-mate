@@ -1,12 +1,14 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 export default function Header({ theme, onToggleTheme }) {
   return (
-    <header className="w-full bg-[var(--color-surface)] border-b border-[var(--color-border)] p-4 flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 h-14 bg-[var(--color-surface)] border-b border-[var(--color-border)] px-4 flex items-center justify-between z-20">
       <div className="flex items-center gap-3">
-        <div className="text-xl font-semibold text-[var(--color-primary)]">MediMate</div>
-        <div className="text-sm text-[var(--color-text-secondary)]">Medication manager</div>
+        <Link to="/dashboard" className="text-lg font-semibold text-[var(--color-primary)]">MediMate</Link>
+        <div className="text-xs text-[var(--color-text-secondary)]">Medication manager</div>
       </div>
+
       <div>
         <button
           aria-label="Toggle theme"

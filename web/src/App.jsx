@@ -5,7 +5,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import Header from './components/Header'
-import Footer from './components/Footer'
+import BottomNav from './components/BottomNav'
 import RequireAuth from './routes/RequireAuth'
 import Dashboard from './pages/Dashboard'
 
@@ -33,7 +33,7 @@ function App() {
         <div className="app-shell min-h-screen flex flex-col">
           <Header theme={theme} onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
 
-          <main className="flex-1">
+          <main className="flex-1 pt-14 pb-24">
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<Login />} />
@@ -42,7 +42,7 @@ function App() {
             </Routes>
           </main>
 
-          <Footer />
+          <BottomNav />
         </div>
       </BrowserRouter>
     </AuthProvider>
