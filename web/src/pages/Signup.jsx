@@ -66,7 +66,16 @@ export default function Signup() {
           </div>
         </form>
       </Card>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => {
+            setToast(null)
+            if (toast.type === 'success') navigate('/login')
+          }}
+        />
+      )}
     </div>
   );
 }

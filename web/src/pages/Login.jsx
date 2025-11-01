@@ -7,7 +7,9 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import Toast from '../components/Toast';
 import LogoTransition from '../components/LogoTransition'
 import { isEmail, isPasswordValid } from '../utils/validators'
+import { useNavigate } from 'react-router-dom'
 
+export default function Login() {
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

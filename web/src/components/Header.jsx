@@ -2,6 +2,8 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 
 export default function Header({ theme, onToggleTheme }) {
+  const { isAuthenticated, user, logout } = useAuth()
+
   return (
     <header className="fixed top-0 left-0 right-0 h-14 bg-[var(--color-surface)] border-b border-[var(--color-border)] px-4 flex items-center justify-between z-20">
       <div className="flex items-center gap-3">
