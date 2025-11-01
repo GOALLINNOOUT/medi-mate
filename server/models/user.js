@@ -28,6 +28,7 @@ const { encryptField, decryptField, normalizeEmail, computeEmailHash } = require
 // Build schema: retain original fields but encrypt PII fields (email, firstName, lastName, phoneNumber)
 const userSchema = new mongoose.Schema({
   email: {
+    type: String,
     set: function(v) {
       // normalize, compute emailHash for deterministic lookup, then encrypt normalized value for storage
       const norm = normalizeEmail(v);
