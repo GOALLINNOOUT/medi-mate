@@ -5,8 +5,9 @@ import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { isEmail, isPasswordValid } from '../utils/validators'
+import { useNavigate } from 'react-router-dom'
 
-export default function Login({ onNavigate }) {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,7 @@ export default function Login({ onNavigate }) {
   const [toast, setToast] = useState(null)
 
   const { login } = useAuth()
+  const navigate = useNavigate()
 
   const submit = async (e) => {
   e.preventDefault()
@@ -32,9 +34,9 @@ export default function Login({ onNavigate }) {
     try {
       const data = await login(email, password)
     console.log('login success', data)
-    setToast({ message: 'Signed in successfully', type: 'success' })
-      setEmail('')
-      setPassword('')
+        setToast({ message: 'Signed in successfully', type: 'success' })
+        setEmail('')
+        setPassword('')
     } catch (err) {
       console.error('login error', err?.response || err)
       setToast({ message: err?.response?.data?.message || 'Failed to sign in', type: 'error' })
@@ -52,11 +54,20 @@ export default function Login({ onNavigate }) {
           <FormField id="password" label="Password" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="••••••••" error={fieldErrors.password} />
           <div className="flex items-center justify-between mt-4">
             <Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
-            <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>onNavigate('signup')}>Create account</button>
+            <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>navigate('/signup')}>Create account</button>
           </div>
         </form>
       </Card>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => {
+              setToast(null)
+              if (toast.type === 'success') navigate('/')
+            }}
+          />
+        )}
     </div>
   );
 }
