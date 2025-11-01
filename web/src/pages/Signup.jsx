@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Card from '../components/Card';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import Toast from '../components/Toast';
 import { isEmail, isPasswordValid, isNameValid } from '../utils/validators'
 import { useNavigate } from 'react-router-dom'
@@ -15,7 +15,6 @@ export default function Signup() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(false);
-
   const { register } = useAuth()
   const navigate = useNavigate()
 
@@ -38,15 +37,15 @@ export default function Signup() {
     }
     setLoading(true)
     try {
-      const data = await register(firstName, lastName, email, password)
-    console.log('signup success', data)
-      setToast({ message: 'Account created — you can sign in now', type: 'success' })
-      // wait for toast to auto-dismiss (or user to dismiss) before redirecting
-      // navigation handled in the Toast onClose handler below
+  const data = await register(firstName, lastName, email, password)
+  console.log('signup success', data)
+  // Show success toast and wait a few seconds before redirecting so user can read message
+  setToast({ message: 'Account created — check your email to verify your account', type: 'success' })
+  setTimeout(() => navigate('/check-email', { state: { email } }), 3000)
     } catch (err) {
       console.error('signup error', err?.response || err)
-  const msg = err?.response?.data?.message || 'Failed to create account'
-  setToast({ message: msg, type: 'error' })
+      const msg = err?.response?.data?.message || 'Failed to create account'
+      setToast({ message: msg, type: 'error' })
     } finally {
       setLoading(false)
     }

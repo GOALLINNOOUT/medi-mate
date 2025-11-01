@@ -1,41 +1,40 @@
-import { useState, useEffect } from 'react'
 import './App.css'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
-import Dashboard from './pages/Dashboard'
-import { AuthProvider } from './contexts/AuthContext'
-import Header from './components/Header'
-import Footer from './components/Footer'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import CheckEmail from './pages/CheckEmail'
+import VerifyEmail from './pages/VerifyEmail'
+import { AuthProvider } from './contexts/AuthContext.jsx'
 import RequireAuth from './routes/RequireAuth'
+import Dashboard from './pages/Dashboard'
+import GuestLayout from './layouts/GuestLayout'
+import UserLayout from './layouts/UserLayout'
 
 function App() {
-  const [theme, setTheme] = useState('light')
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light')
-  }, [theme])
-
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <div className="app-shell min-h-screen flex flex-col">
-          <Header theme={theme} onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
+    <AuthProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <div className="app-shell min-h-screen flex flex-col">
+            <main className="flex-1">
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
+                {/* public guest routes use the GuestLayout which contains TopNavbar */}
+                <Route path="/login" element={<GuestLayout><Login /></GuestLayout>} />
+                <Route path="/signup" element={<GuestLayout><Signup /></GuestLayout>} />
+                <Route path="/check-email" element={<GuestLayout><CheckEmail /></GuestLayout>} />
+                <Route path="/verify-email" element={<GuestLayout><VerifyEmail /></GuestLayout>} />
 
-          <Footer />
-        </div>
-      </AuthProvider>
-    </BrowserRouter>
+                {/* protected app routes use the UserLayout (Sidebar on desktop, BottomNav on mobile) */}
+                <Route path="/dashboard" element={<RequireAuth><UserLayout><Dashboard /></UserLayout></RequireAuth>} />
+              </Routes>
+            </main>
+          </div>
+        </BrowserRouter>
+      </ThemeProvider>
+    </AuthProvider>
   )
 }
 

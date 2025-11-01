@@ -13,11 +13,13 @@
   --color-primary: #2D9CDB;
   --color-primary-light: #56CCF2;
   --color-secondary: #27AE60;
-  --color-bg: #F9FAFB;
+  /* Slightly deeper background than pure white to increase separation from surfaces */
+  --color-bg: #F3F4F6; /* gray-100 */
   --color-surface: #FFFFFF;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-border: #E5E7EB;
+  --color-text-primary: #0F1724; /* slightly darker for improved contrast */
+  --color-text-secondary: #374151; /* gray-700 - stronger contrast than previous */
+  /* stronger border to separate cards/inputs from background */
+  --color-border: #D1D5DB; /* gray-300 */
   --color-error: #E63946;
   --color-warning: #F59E0B;
   --color-info: #3B82F6;
@@ -51,25 +53,30 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--color-primary);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--color-primary-light);
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+ 
+  /* Do not center the entire app using body — let the app container manage layout.
+     This allows the UI to expand naturally on larger viewports (desktop) while
+     keeping mobile behavior intact. */
 }
 
 /* Utility: surface backgrounds and text colors using tokens */
 .app-shell {
   background-color: var(--color-bg);
   color: var(--color-text-primary);
+  /* Center content on wide screens while allowing full-width on small screens */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0 auto;
 }
 
 h1 {
@@ -84,27 +91,36 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  /* Use surface and text tokens so buttons follow light/dark themes */
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--color-primary-light);
 }
 button:focus,
+button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+  /* clearer, accessible focus ring using primary color with reduced opacity */
+  box-shadow: 0 0 0 4px rgba(45,156,219,0.18);
+  border-color: var(--color-primary-light);
 }
 
-@media (prefers-color-scheme: light) {
+/* Respect user/system preference. Defaults are defined in :root; dark can be provided
+   via [data-theme="dark"] or by system preference below. These rules keep the
+   visual tokens consistent and avoid hard-coded colors. */
+@media (prefers-color-scheme: dark) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color-scheme: dark;
   }
   a:hover {
-    color: #747bff;
+    color: var(--color-primary-light);
   }
   button {
-    background-color: #f9f9f9;
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
   }
 }
