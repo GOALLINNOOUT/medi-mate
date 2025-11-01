@@ -5,22 +5,23 @@ import Button from '../components/Button';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from '../components/Toast';
 import { isEmail, isPasswordValid, isNameValid } from '../utils/validators'
+import { useNavigate } from 'react-router-dom'
 
-export default function Signup({ onNavigate }) {
+export default function Signup() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({})
   const [toast, setToast] = useState(null)
+  const [loading, setLoading] = useState(false);
 
   const { register } = useAuth()
+  const navigate = useNavigate()
 
   const submit = async (e) => {
     e.preventDefault()
-    setError('')
+      setFieldErrors({})
     // client-side validation
     const fieldErrors = {}
     if (!isNameValid(firstName)) fieldErrors.firstName = 'Enter a valid first name'
@@ -39,12 +40,12 @@ export default function Signup({ onNavigate }) {
     try {
       const data = await register(firstName, lastName, email, password)
     console.log('signup success', data)
-  setToast({ message: 'Account created — you can sign in now', type: 'success' })
-  setTimeout(() => onNavigate('login'), 800)
+      setToast({ message: 'Account created — you can sign in now', type: 'success' })
+      // wait for toast to auto-dismiss (or user to dismiss) before redirecting
+      // navigation handled in the Toast onClose handler below
     } catch (err) {
       console.error('signup error', err?.response || err)
   const msg = err?.response?.data?.message || 'Failed to create account'
-  setError(msg)
   setToast({ message: msg, type: 'error' })
     } finally {
       setLoading(false)
@@ -54,8 +55,7 @@ export default function Signup({ onNavigate }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
-        <h1 className="text-h1 font-semibold mb-4">Create account</h1>
-  {error && <div className="mb-3 text-sm text-red-500">{error}</div>}
+    <h1 className="text-h1 font-semibold mb-4">Create account</h1>
         <form onSubmit={submit}>
           <FormField id="firstName" label="First name" value={firstName} onChange={(e)=>setFirstName(e.target.value)} error={fieldErrors.firstName} />
           <FormField id="lastName" label="Last name" value={lastName} onChange={(e)=>setLastName(e.target.value)} error={fieldErrors.lastName} />
@@ -63,11 +63,20 @@ export default function Signup({ onNavigate }) {
           <FormField id="password" label="Password" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} error={fieldErrors.password} />
           <div className="flex items-center justify-between mt-4">
             <Button type="submit" disabled={loading}>{loading ? 'Creating…' : 'Create account'}</Button>
-            <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>onNavigate('login')}>Already have an account?</button>
+            <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>navigate('/login')}>Already have an account?</button>
           </div>
         </form>
       </Card>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => {
+            setToast(null)
+            if (toast.type === 'success') navigate('/login')
+          }}
+        />
+      )}
     </div>
   );
 }
