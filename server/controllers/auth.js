@@ -3,20 +3,26 @@ const User = require('../models/user');
 const Medication = require('../models/medication');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const { buildVerificationEmail } = require('../utils/mailTemplates');
+const { computeEmailHash, normalizeEmail } = require('../utils/encryption');
 
 exports.register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role, phoneNumber } = req.body;
+  const { email, password, firstName, lastName, role, phoneNumber } = req.body;
+  // Normalize email and compute deterministic hash for lookups
+  const normalizedEmail = normalizeEmail(email);
+  const emailHash = computeEmailHash(normalizedEmail);
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Check if user already exists using emailHash (deterministic, indexable)
+    const existingUser = await User.findOne({ emailHash });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     // Create new user (unverified by default)
+    // We set emailHash to allow lookups. The `email` setter on the model will encrypt the stored value.
     const user = new User({
-      email,
+      email: normalizedEmail,
+      emailHash,
       password,
       firstName,
       lastName,
@@ -50,10 +56,14 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
 
-    // Find user
-    const user = await User.findOne({ email });
+  const normalizedEmail = normalizeEmail(email);
+  const emailHash = computeEmailHash(normalizedEmail);
+
+    // Find user by deterministic email hash
+    const user = await User.findOne({ emailHash });
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
@@ -250,10 +260,12 @@ exports.verifyEmail = async (req, res) => {
 // Resend verification email
 exports.resendVerification = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email is required' });
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+  const normalizedEmail = normalizeEmail(email);
+  const emailHash = computeEmailHash(normalizedEmail);
 
-    const user = await User.findOne({ email });
+  const user = await User.findOne({ emailHash });
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (user.isVerified) return res.status(400).json({ message: 'User already verified' });
 

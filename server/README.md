@@ -31,5 +31,9 @@ Important env keys
 - JWT_SECRET — JWT signing secret
 - FIREBASE_CREDENTIALS — path to Firebase service account JSON
 - CLOUDINARY_URL — Cloudinary upload configuration
+ - ENCRYPTION_KEY — base64 or hex encoded 32-byte key used for field-level AES-256-GCM encryption (see `ENCRYPTION.md`).
+
+Notes on keys and KMS
+- Prefer using a cloud KMS (AWS KMS, GCP KMS, Azure Key Vault) to manage and rotate encryption keys instead of setting raw keys in env for production. If you must use env vars for local dev, keep them out of source control and rotate them regularly.
 
 If you want me to expand this scaffold (auth, models, example controllers), tell me which endpoints or models to add next.
