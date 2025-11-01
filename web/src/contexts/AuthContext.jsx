@@ -3,13 +3,11 @@ import api from '../api'
 import AuthContext from './authContext'
 
 export function AuthProvider({ children }) {
-  const [accessToken, setAccessToken] = useState(null)
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-
   const setAuthFromResponse = (data) => {
     if (!data) return
-    if (data.accessToken) setAccessToken(data.accessToken)
+    // Server now returns `user` and sets httpOnly cookies for both refreshToken and accessToken.
     if (data.user) setUser(data.user)
   }
 
@@ -26,16 +24,16 @@ export function AuthProvider({ children }) {
   const refresh = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await api.post('/api/v1/auth/refresh')
+      // server route is /refresh-token (match server/routes/auth.js)
+      const res = await api.post('/api/v1/auth/refresh-token')
       setAuthFromResponse(res.data)
-      // If refresh did not return user/accessToken, try explicit /me endpoint
-      if (!res.data?.user && !res.data?.accessToken) {
+      // If refresh did not return user or any kind of token, try explicit /me endpoint
+      if (!res.data?.user && !res.data?.accessToken && !res.data?.token) {
         await fetchMe()
       }
       setLoading(false)
       return res.data
     } catch {
-      setAccessToken(null)
       setUser(null)
       setLoading(false)
       return null
@@ -65,8 +63,12 @@ export function AuthProvider({ children }) {
     } catch {
       // ignore
     }
-    setAccessToken(null)
     setUser(null)
+    try {
+      // nothing to delete - we rely on httpOnly cookies for auth
+    } catch {
+      // ignore
+    }
   }
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function AuthProvider({ children }) {
   }, [refresh])
 
   return (
-    <AuthContext.Provider value={{ accessToken, user, loading, login, register, logout, refresh, isAuthenticated: !!accessToken || !!user }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refresh, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   )

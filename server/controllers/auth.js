@@ -28,20 +28,26 @@ exports.register = async (req, res) => {
     const token = generateToken(user._id, user.role);
     const refreshToken = generateRefreshToken(user._id);
 
-    // Set refresh token in httpOnly cookie
-    const cookieOptions = {
+    // Set refresh token in httpOnly cookie and also set short-lived access token cookie
+    const refreshCookieOptions = {
       httpOnly: true,
-      // secure cookies required when sameSite='none'
       secure: process.env.NODE_ENV === 'production',
-      // For cross-site (frontend on different origin), use 'none' in production
-      // Use 'lax' in development to allow testing without HTTPS
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    };
+    }
 
-    res.cookie('refreshToken', refreshToken, cookieOptions);
+    // access token cookie: shorter lived (e.g., 15 minutes)
+    const accessCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    }
 
-    // Return user data and access token
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions)
+    res.cookie('accessToken', token, accessCookieOptions)
+
+    // Return user data only (token is sent via httpOnly cookie)
     res.status(201).json({
       user: {
         id: user._id,
@@ -49,9 +55,8 @@ exports.register = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role
-      },
-      token
-    });
+      }
+    })
   } catch (err) {
     res.status(500).json({ message: 'Error creating user', error: err.message });
   }
@@ -77,17 +82,24 @@ exports.login = async (req, res) => {
     const token = generateToken(user._id, user.role);
     const refreshToken = generateRefreshToken(user._id);
 
-    // Set refresh token in httpOnly cookie
-    const cookieOptions = {
+    // Set refresh token and short-lived access token in httpOnly cookies
+    const refreshCookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    };
+    }
+    const accessCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    }
 
-    res.cookie('refreshToken', refreshToken, cookieOptions);
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions)
+    res.cookie('accessToken', token, accessCookieOptions)
 
-    // Return user data and access token
+    // Return user data only (access token is in httpOnly cookie)
     res.json({
       user: {
         id: user._id,
@@ -95,9 +107,8 @@ exports.login = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role
-      },
-      token
-    });
+      }
+    })
   } catch (err) {
     res.status(500).json({ message: 'Error during login', error: err.message });
   }
@@ -119,23 +130,44 @@ exports.refreshToken = async (req, res) => {
       return res.status(401).json({ message: 'User not found' });
     }
 
-    // Generate new access token
-    const token = generateToken(user._id, user.role);
+    // Generate new access token and set it in an httpOnly cookie
+    const token = generateToken(user._id, user.role)
 
-    res.json({ token });
+    const accessCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    }
+
+    res.cookie('accessToken', token, accessCookieOptions)
+
+    // Return user data so client can update state without needing to parse cookies
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      }
+    })
   } catch (err) {
     res.status(401).json({ message: 'Invalid refresh token' });
   }
 };
 
 exports.logout = (req, res) => {
-  // Clear cookie using matching options (except maxAge)
-  res.clearCookie('refreshToken', {
+  // Clear cookies using matching options (except maxAge)
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  });
-  res.json({ message: 'Logged out successfully' });
+  }
+
+  res.clearCookie('refreshToken', cookieOptions)
+  res.clearCookie('accessToken', cookieOptions)
+  res.json({ message: 'Logged out successfully' })
 };
 
 exports.me = async (req, res) => {
@@ -166,12 +198,15 @@ exports.deleteAccount = async (req, res) => {
     // Delete user record
     await User.findByIdAndDelete(userId);
 
-    // Clear refresh cookie
-    res.clearCookie('refreshToken', {
+    // Clear cookies
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-    });
+    }
+
+    res.clearCookie('refreshToken', cookieOptions)
+    res.clearCookie('accessToken', cookieOptions)
 
     res.json({ message: 'Account deleted and associated data removed' });
   } catch (err) {

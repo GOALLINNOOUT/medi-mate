@@ -1,44 +1,22 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-
-function IconHome({ className = 'w-5 h-5' }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M3 10.5L12 4l9 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 21V11.5h14V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function IconUser({ className = 'w-5 h-5' }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function IconPlus({ className = 'w-5 h-5' }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
+import Icon from './Icon'
 
 export default function BottomNav() {
   const { pathname } = useLocation()
 
   const items = [
-    { to: '/dashboard', label: 'Dashboard', icon: <IconHome /> },
-    { to: '/login', label: 'Login', icon: <IconPlus /> },
-    { to: '/signup', label: 'Signup', icon: <IconUser /> },
+    { to: '/dashboard', label: 'Home', icon: 'home' },
+    { to: '/mood', label: 'Mood', icon: 'mood' },
+  { to: '/medications', label: 'Medication', icon: 'med' },
+  { to: '/analytics', label: 'Analytics', icon: 'analytics' },
+    { to: '/profile', label: 'Profile', icon: 'profile' },
   ]
 
   return (
-    <nav aria-label="Bottom navigation" className="fixed left-1/2 -translate-x-1/2 bottom-5 z-40">
-      <div className="flex items-center gap-3 px-3 py-2 rounded-2xl bg-white/30 dark:bg-black/30 border border-white/10 dark:border-black/20 backdrop-blur-md shadow-lg">
+    // show only on small screens; for desktop the Sidebar will be used
+    <nav aria-label="Bottom navigation" className="md:hidden fixed inset-x-0 bottom-5 z-50 flex justify-center pointer-events-none">
+      <div className="pointer-events-auto flex items-center justify-between gap-2 px-3 py-2 max-w-md w-[min(94%,480px)] rounded-2xl bg-white/12 dark:bg-slate-900/28 border border-white/6 dark:border-slate-700/40 backdrop-blur-xl shadow-lg/40 hover:shadow-2xl transform transition duration-200 hover:-translate-y-1">
         {items.map((it) => {
           const active = pathname === it.to
           return (
@@ -46,14 +24,16 @@ export default function BottomNav() {
               key={it.to}
               to={it.to}
               aria-current={active ? 'page' : undefined}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${
+              className={`flex flex-col items-center gap-1 px-2 py-1 text-[10px] transition-all duration-200 transform rounded-lg ${
                 active
-                  ? 'bg-[var(--color-primary)] text-white shadow'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/60'
+                  ? 'text-white'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-white/8 dark:hover:bg-white/5'
               }`}
             >
-              <span className="text-[18px]">{it.icon}</span>
-              <span className="hidden sm:inline">{it.label}</span>
+                <span className={`p-1 rounded-full transition-transform duration-200 ${active ? 'bg-teal-600 text-white scale-110' : 'bg-transparent'}`}>
+                <Icon name={it.icon} className="w-4 h-4" />
+              </span>
+              <span className="text-[10px] tracking-wide">{it.label}</span>
             </Link>
           )
         })}
