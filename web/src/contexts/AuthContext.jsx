@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import api from '../api'
-
-const AuthContext = createContext(null)
+import AuthContext from './authContext'
 
 export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(null)
@@ -14,11 +13,25 @@ export function AuthProvider({ children }) {
     if (data.user) setUser(data.user)
   }
 
+  const fetchMe = useCallback(async () => {
+    try {
+      const meRes = await api.get('/api/v1/auth/me')
+      setAuthFromResponse(meRes.data)
+      return meRes.data
+    } catch {
+      return null
+    }
+  }, [])
+
   const refresh = useCallback(async () => {
     try {
       setLoading(true)
       const res = await api.post('/api/v1/auth/refresh')
       setAuthFromResponse(res.data)
+      // If refresh did not return user/accessToken, try explicit /me endpoint
+      if (!res.data?.user && !res.data?.accessToken) {
+        await fetchMe()
+      }
       setLoading(false)
       return res.data
     } catch {
@@ -27,12 +40,17 @@ export function AuthProvider({ children }) {
       setLoading(false)
       return null
     }
-  }, [])
+  }, [fetchMe])
 
   const login = async (email, password) => {
     const res = await api.post('/api/v1/auth/login', { email, password })
     // server should set HttpOnly refresh cookie; response may include accessToken/user
     setAuthFromResponse(res.data)
+    // If the server only set a refresh cookie (no access token returned), call refresh to obtain an access token
+    if (!res.data?.accessToken && !res.data?.user) {
+      // try refresh which will fall back to /me if needed
+      await refresh()
+    }
     return res.data
   }
 
@@ -57,16 +75,10 @@ export function AuthProvider({ children }) {
   }, [refresh])
 
   return (
-    <AuthContext.Provider value={{ accessToken, user, loading, login, register, logout, refresh, isAuthenticated: !!accessToken }}>
+    <AuthContext.Provider value={{ accessToken, user, loading, login, register, logout, refresh, isAuthenticated: !!accessToken || !!user }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
-}
-
-export default AuthContext
+// Note: the `useAuth` hook lives in a separate file (`src/contexts/useAuth.js`) to avoid Fast Refresh warnings

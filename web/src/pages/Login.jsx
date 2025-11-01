@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import Card from '../components/Card';
 import FormField from '../components/FormField';
 import Button from '../components/Button';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
+import { useNavigate, useLocation } from 'react-router-dom'
 import Toast from '../components/Toast';
 import { isEmail, isPasswordValid } from '../utils/validators'
 
-export default function Login({ onNavigate }) {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,9 @@ export default function Login({ onNavigate }) {
   const [toast, setToast] = useState(null)
 
   const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state && location.state.from) || { pathname: '/dashboard' }
 
   const submit = async (e) => {
   e.preventDefault()
@@ -31,10 +35,12 @@ export default function Login({ onNavigate }) {
     setLoading(true)
     try {
       const data = await login(email, password)
-    console.log('login success', data)
-    setToast({ message: 'Signed in successfully', type: 'success' })
+      console.log('login success', data)
+      setToast({ message: 'Signed in successfully', type: 'success' })
       setEmail('')
       setPassword('')
+      // after toast dismiss we'll navigate — use a short timeout to allow toast animation
+      setTimeout(() => navigate(from.pathname || '/dashboard', { replace: true }), 900)
     } catch (err) {
       console.error('login error', err?.response || err)
       setToast({ message: err?.response?.data?.message || 'Failed to sign in', type: 'error' })
@@ -52,7 +58,7 @@ export default function Login({ onNavigate }) {
           <FormField id="password" label="Password" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="••••••••" error={fieldErrors.password} />
           <div className="flex items-center justify-between mt-4">
             <Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
-            <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>onNavigate('signup')}>Create account</button>
+            <button type="button" className="text-sm text-[var(--color-primary)]" onClick={()=>navigate('/signup')}>Create account</button>
           </div>
         </form>
       </Card>
